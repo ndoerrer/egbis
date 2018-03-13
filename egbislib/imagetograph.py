@@ -8,6 +8,7 @@ import skimage.color
 import skimage.transform
 import skimage.filters
 import matplotlib.pyplot as plt
+import warnings
 
 #IDEA: generally stretch grayscale images to range 0-1??
 
@@ -19,6 +20,7 @@ def loadImage(filename):
 	Returns:
 		image as np.ndarray
 	"""
+	print "loading image", filename
 	img = skimage.io.imread(filename)
 	return img
 
@@ -29,7 +31,10 @@ def saveImage(img, filename):
 		img:		image to be saved (np.ndarray)
 		filename:	filename for the image file (with optional path)
 	"""
-	skimage.io.imsave(filename, img)
+	print "storing image as", filename
+	with warnings.catch_warnings():
+		warnings.simplefilter("ignore")	#lossy conversion from float64 to uint16
+		skimage.io.imsave(filename, img)
 
 def imageToGray(img):
 	"""
@@ -97,6 +102,21 @@ def preprocess(img, sigma=0.8):
 	res = skimage.filters.gaussian(img, sigma=sigma)
 	return res
 
+def createNodes(img):
+	"""
+	Creates a list of vertice names (rownumber|colnumber) for all pixels of
+	a given image.
+	Args:
+		img: image to get indexmap for
+	Returns:
+		list of vertice names for the image
+	"""
+	(x, y) = np.mgrid[0:img.shape[0], 0:img.shape[1]]
+	x = list(x.flatten())
+	y = list(y.flatten())
+	nodes = ["{}|{}".format(x_, y_) for x_, y_ in zip(x, y)]
+	return nodes
+
 def directNeighborGraph(img):
 	"""
 	Creates an undirected graph from a grayscale image by using each pixel as a
@@ -107,10 +127,7 @@ def directNeighborGraph(img):
 	Returns:
 		graph with edges corresponding to intensity differences (1-neighborhood)
 	"""
-	(x, y) = np.mgrid[0:img.shape[0], 0:img.shape[1]]
-	x = list(x.flatten())
-	y = list(y.flatten())
-	nodes = ["{}|{}".format(x_, y_) for x_, y_ in zip(x, y)]
+	nodes = createNodes(img)
 	G = nx.Graph()
 	print "STATUS: adding nodes"
 	G.add_nodes_from(nodes)
@@ -129,6 +146,35 @@ def directNeighborGraph(img):
 			if j != img.shape[1]-1:
 				w = np.abs(img[i,j] - img[i,j+1])
 				G.add_edge(str(i)+"|"+str(j), str(i)+"|"+str(j+1), weight=w)
+	print "STATUS: finished Graph creation"
+	return (G, nodes)
+
+def distanceThresholdGraph(img, R=1):
+	"""
+	Creates an undirected graph from a grayscale image by using each pixel as a
+	vertex. Edges are created for each pair of vertices with distance <= R
+	and the weights are	their difference in intensity.
+	For R=1 this should be the same as directNeighborGraph. (TODO: confirm)
+	Args:
+		img: image to build a graph for
+	Returns:
+		graph with edges corresponding to intensity differences
+	"""
+	nodes = createNodes(img)
+	G = nx.Graph()
+	print "STATUS: adding nodes"
+	G.add_nodes_from(nodes)
+	print "STATUS: adding edges"
+	for i in range(img.shape[0]):
+		for j in range(img.shape[1]):
+			for i2 in range(int(i-R), int(i+R+1)):
+				for j2 in range(int(j-R), int(j+R+1)):
+					if (i2+j2-i-j)*(i2+j2-i-j) > R*R:
+						continue
+					if i2>0 and j2>0 and i2<img.shape[0] and j2<img.shape[1]:
+						w = np.abs(img[i,j] - img[i2,j2])
+						G.add_edge(str(i)+"|"+str(j), str(i2)+"|"+str(j2),
+																weight=w)
 	print "STATUS: finished Graph creation"
 	return (G, nodes)
 
