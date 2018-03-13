@@ -40,7 +40,7 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1):
 	#egbislib.showGraph(G)
 	seg = egbislib.segmentate(G, V, k=k)
 	segImage = seg.toImage(img.shape)
-	egbislib.saveImage(img, name+"_e"+str(exp)+"_sigma"+str(sigma)+
+	egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
 							"_k"+str(k)+"_R"+str(R)+extension)
 	egbislib.showStereo(img_raw, segImage)
 	return 0

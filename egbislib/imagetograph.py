@@ -34,7 +34,9 @@ def saveImage(img, filename):
 	print "storing image as", filename
 	with warnings.catch_warnings():
 		warnings.simplefilter("ignore")	#lossy conversion from float64 to uint16
-		skimage.io.imsave(filename, img)
+		stretched = skimage.img_as_float(img)
+		stretched = (stretched - np.amin(stretched)) / (np.amax(stretched) - np.amin(stretched))
+		skimage.io.imsave(filename, stretched)
 
 def imageToGray(img):
 	"""
