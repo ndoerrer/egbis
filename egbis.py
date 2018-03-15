@@ -8,7 +8,8 @@ import sys
 # shapes: exp=-2, sigma=0.8, k=3.0, R=1 -> runs 3 minutes (10GB RAM!!)
 # shapes: exp=-3, sigma=0.8, k=2.5, R=3
 
-def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1):
+def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
+													weighted=False):
 	"""
 	Method running the whole algorithm. Image is loaded, converted to grayscale
 	and converted to a graph which is then used for the segmentation algorithm.
@@ -20,6 +21,7 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1):
 		sigma:		standard deviation for image smoothing (gaussian)
 		k:			factor for merging threshold function
 		R:			neighborhood distance limit (in pixels)
+		weighted:	if a linear increase of weights with distance should be used
 	Returns: exit status
 	"""
 	print "running algorithm with settings:"
@@ -28,20 +30,30 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1):
 	print "\tsigma:   ", sigma
 	print "\tk:       ", k
 	print "\tR:       ", R
+	print "\tweighted:", weighted
 
 	img_raw = egbislib.imageToGray(egbislib.loadImage(name+extension))
 	img_raw = egbislib.scaleImage(img_raw, exp)
 	img = egbislib.preprocess(img_raw, sigma=sigma)
 	#egbislib.showImage(img)
+
 	if R == 0:
 		(G, V) = egbislib.directNeighborGraph(img)
 	else:
-		(G, V) = egbislib.distanceThresholdGraph(img, R=R)
+		if not weighted:
+			(G, V) = egbislib.distanceThresholdGraph(img, R=R)
+		else:
+			(G, V) = egbislib.distanceWeightedThresholdGraph(img, R=R)
 	#egbislib.showGraph(G)
+
 	seg = egbislib.segmentate(G, V, k=k)
 	segImage = seg.toImage(img.shape)
-	egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
+	if not weighted:
+		egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
 							"_k"+str(k)+"_R"+str(R)+extension)
+	else:
+		egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
+							"_k"+str(k)+"_R"+str(R)+"w"+extension)	
 	egbislib.showStereo(img_raw, segImage)
 	return 0
 
@@ -54,19 +66,22 @@ if __name__ == "__main__":
 									\n\t\t\t[--sigma <sigma>]\t(default: 0.0)\
 									\n\t\t\t[--k <k>]\t\t(default: 1.0)\
 									\n\t\t\t[--R <R>]\t\t(default: 1.0)\
+									\n\t\t\t[--weighted]\t\t(default: not)\
 									\n\t\t\t <image-file>\n"
-		print "exp:\texponent for image scaling. Factor will be 2^exp\n"+\
-				"\t\tfor negative exp the image size will be reduced.\n"+\
-				"sigma:\tstandard deviation for gaussian image smoothing\n"+\
-				"\t\tto reduce artifacts\n"+\
-				"k:\tfactor for component merging threshold function. The\n"+\
+		print "exp:\t\texponent for image scaling. Factor will be 2^exp\n"+\
+				"\t\tfor negative exp the image size will be reduced.\n\n"+\
+				"sigma:\t\tstandard deviation for gaussian image smoothing\n"+\
+				"\t\tto reduce artifacts\n\n"+\
+				"k:\t\tfactor for component merging threshold function. The\n"+\
 				"\t\tlarger the value, the more likely is it for components\n"+\
-				"\t\tto be merged.\n"+\
-				"R:\trange of neighborhood relationships (in pixels)\n"+\
-				"\t\tR=0 will enable simple neightborhood edges method."
+				"\t\tto be merged.\n\n"+\
+				"R:\t\trange of neighborhood relationships (in pixels)\n"+\
+				"\t\tR=0 will enable simple neightborhood edges method.\n\n"+\
+				"weighted:\twheter or not to use linear increase of weights\n"+\
+				"\t\twith increasing distance."
 		sys.exit(0)
 
-	sigma = 0; exp = 0; k = 1; R = 1
+	sigma = 0; exp = 0; k = 1; R = 1; weighted = False
 	
 	imagefile = sys.argv[-1].split(".")
 	if len(imagefile) > 2:
@@ -87,5 +102,8 @@ if __name__ == "__main__":
 	if "--R" in sys.argv:
 		i = sys.argv.index("--R")
 		R = float(sys.argv[i+1])
+	if "--weighted" in sys.argv:
+		weighted = True
 
-	runSegmentation(name, extension, exp=exp, sigma=sigma, k=k, R=R)
+	runSegmentation(name, extension, exp=exp, sigma=sigma, k=k, R=R,
+												weighted=weighted)

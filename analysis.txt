@@ -1,0 +1,26 @@
+Number of Vertices n (= pixels in graph)
+Number of Edges m ( < 4n for directNeighborGraph,
+					< n*4*R^2 for distance(Weighted)ThresholdGraph )
+
+Runtime of method runSegmentation:
+
+loading, converting to grayscale, scaling: O(n)
+preprocessing/gaussian: O(fft(n))+O(n) = O(n*log(n))
+imageToGraph:	directNeighborGraph: O(4n)
+				distance(Weighted)ThresholdGraph: O(n)+O(n*4*R^2)
+
+segmentate:
+		- sort edges in O(m*log(m))
+		- iteratively merging in O(m)*O(find+merge)
+
+graphToImage, storing, displaying, ... : O(n)
+
+All in all this is O(m*log(m)) = O(4*n*R^2*log(4*n*R^2))
+
+this time ranges from 1s to many minutes
+depending on image size. This is much more than the "small fraction of a second"
+which was stated in the paper. Reasons for that might be:
+ - That i use multigraphs (multiple edges with diff. weights between 2 vertices)
+ - That my implementation is in python with nested for-loops which is
+	known to be bad in performance
+ - more reasons?

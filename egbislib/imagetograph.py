@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 #IDEA: generally stretch grayscale images to range 0-1??
+#IDEA: lowest weight edge instead of multigraph edges
 
 def loadImage(filename):
 	"""
@@ -163,7 +164,7 @@ def distanceThresholdGraph(img, R=1):
 		graph with edges corresponding to intensity differences
 	"""
 	nodes = createNodes(img)
-	G = nx.Graph()
+	G = nx.MultiGraph()
 	print "STATUS: adding nodes"
 	G.add_nodes_from(nodes)
 	print "STATUS: adding edges"
@@ -171,12 +172,44 @@ def distanceThresholdGraph(img, R=1):
 		for j in range(img.shape[1]):
 			for i2 in range(int(i-R), int(i+R+1)):
 				for j2 in range(int(j-R), int(j+R+1)):
-					if (i2+j2-i-j)*(i2+j2-i-j) > R*R:
+					if (i2-i)*(i2-i)+(j2-j)*(j2-j) > R*R or (i==i2 and j==j2):
 						continue
 					if i2>0 and j2>0 and i2<img.shape[0] and j2<img.shape[1]:
 						w = np.abs(img[i,j] - img[i2,j2])
 						G.add_edge(str(i)+"|"+str(j), str(i2)+"|"+str(j2),
 																weight=w)
+	print "STATUS: finished Graph creation"
+	return (G, nodes)
+
+def distanceWeightedThresholdGraph(img, R=1):
+	"""
+	Creates an undirected graph from a grayscale image by using each pixel as a
+	vertex. Edges are created for each pair of vertices with distance <= R
+	and the weights are	their difference in intensity multiplied by the factor
+	distance_square. This is 1 if distance = 1 and increases quadratically
+	up to R.
+	For R=1 this is the same as distanceThresholdGraph.
+	Args:
+		img: image to build a graph for
+	Returns:
+		graph with edges corresponding to intensity differences
+	"""
+	nodes = createNodes(img)
+	G = nx.MultiGraph()
+	print "STATUS: adding nodes"
+	G.add_nodes_from(nodes)
+	print "STATUS: adding edges"
+	for i in range(img.shape[0]):
+		for j in range(img.shape[1]):
+			for i2 in range(int(i-R), int(i+R+1)):
+				for j2 in range(int(j-R), int(j+R+1)):
+					distance_square = (i2-i)*(i2-i)+(j2-j)*(j2-j)
+					if distance_square > R*R or (i==i2 and j==j2):
+						continue
+					if i2>0 and j2>0 and i2<img.shape[0] and j2<img.shape[1]:
+						w = np.abs(img[i,j] - img[i2,j2])
+						G.add_edge(str(i)+"|"+str(j), str(i2)+"|"+str(j2),
+									weight=w*np.sqrt(distance_square))
 	print "STATUS: finished Graph creation"
 	return (G, nodes)
 
