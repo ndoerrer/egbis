@@ -5,6 +5,7 @@ import sys
 
 # falcon: exp=-4, sigma=0.8, k=3.0, R=1 -> runs 25 seconds
 # falcon: exp=-4, sigma=1.3, k=2.5, R=3
+# falcon: exp=-2, sigma=1.3, k=2.5, R=3 weighted -> runs 9 hours :/
 # shapes: exp=-2, sigma=0.8, k=3.0, R=1 -> runs 3 minutes (10GB RAM!!)
 # shapes: exp=-3, sigma=0.8, k=2.5, R=3
 
