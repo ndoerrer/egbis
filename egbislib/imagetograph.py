@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import warnings
 
 #IDEA: generally stretch grayscale images to range 0-1??
-#IDEA: lowest weight edge instead of multigraph edges
 
 def loadImage(filename):
 	"""
@@ -164,7 +163,7 @@ def distanceThresholdGraph(img, R=1):
 		graph with edges corresponding to intensity differences
 	"""
 	nodes = createNodes(img)
-	G = nx.MultiGraph()
+	G = nx.Graph()
 	print "STATUS: adding nodes"
 	G.add_nodes_from(nodes)
 	print "STATUS: adding edges"
@@ -195,7 +194,7 @@ def distanceWeightedThresholdGraph(img, R=1):
 		graph with edges corresponding to intensity differences
 	"""
 	nodes = createNodes(img)
-	G = nx.MultiGraph()
+	G = nx.Graph()
 	print "STATUS: adding nodes"
 	G.add_nodes_from(nodes)
 	print "STATUS: adding edges"
