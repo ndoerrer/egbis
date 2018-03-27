@@ -117,3 +117,23 @@ class Segmentation:
 			print "Int"
 			print np.asarray(self.Int).reshape(shape)
 		return labels
+
+	def toLabelList(self):
+		"""
+		Converts the unionfind-structure to a list of lists containing
+		member indices for each component. Each index is uniquely matched
+		to one of the components (at most n).
+		Returns:
+			list of lists, each holding member indices for each component
+		"""
+		components = []
+		result = []
+		num = len(self.parent)
+		for i in range(num):
+			components.append([])
+		for i in range(num):
+			components[self.find(i)].append(i)
+		for entry in components:
+			if entry:				# = so if not empty
+				result.append(entry)
+		return result

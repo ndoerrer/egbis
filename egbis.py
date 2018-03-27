@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf_8 -*-
 
 import egbislib
 import sys
@@ -9,8 +10,14 @@ import sys
 # shapes: exp=-2, sigma=0.8, k=3.0, R=1 -> runs 3 minutes (10GB RAM!!)
 # shapes: exp=-3, sigma=0.8, k=2.5, R=3
 
+# fifastats.csv: R=200, k=4000, rows=2000 -> runs 45 minutes
+# fifastats.csv: R=250, k=4000, rows=400 -> runs 15 seconds
+
+#Remark: storing all pairwise differences would need 2474983368 Bytes ~ 2.5 GB
+# of space and a veeeeery long time to compute
+
 def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
-													weighted=False):
+										weighted=False, rows=-1):
 	"""
 	Method running the whole algorithm. Image is loaded, converted to grayscale
 	and converted to a graph which is then used for the segmentation algorithm.
@@ -23,40 +30,57 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
 		k:			factor for merging threshold function
 		R:			neighborhood distance limit (in pixels)
 		weighted:	if a linear increase of weights with distance should be used
+		rows:		(for CSV) how many rows should be processed (from start)
 	Returns: exit status
 	"""
-	print "running algorithm with settings:"
-	print "\tfilename:", name+extension
-	print "\texp:     ", exp
-	print "\tsigma:   ", sigma
-	print "\tk:       ", k
-	print "\tR:       ", R
-	print "\tweighted:", weighted
+	if extension == ".jpg" or extension == ".png" or extension == ".tif":
+		print "running algorithm on image with settings:"
+		print "\tfilename:", name+extension
+		print "\texp:     ", exp
+		print "\tsigma:   ", sigma
+		print "\tk:       ", k
+		print "\tR:       ", R
+		print "\tweighted:", weighted
 
-	img_raw = egbislib.imageToGray(egbislib.loadImage(name+extension))
-	img_raw = egbislib.scaleImage(img_raw, exp)
-	img = egbislib.preprocess(img_raw, sigma=sigma)
-	#egbislib.showImage(img)
+		img_raw = egbislib.imageToGray(egbislib.loadImage(name+extension))
+		img_raw = egbislib.scaleImage(img_raw, exp)
+		img = egbislib.preprocess(img_raw, sigma=sigma)
+		#egbislib.showImage(img)
 
-	if R == 0:
-		(G, V) = egbislib.directNeighborGraph(img)
-	else:
-		if not weighted:
-			(G, V) = egbislib.distanceThresholdGraph(img, R=R)
+		if R == 0:
+			(G, V) = egbislib.directNeighborGraph(img)
 		else:
-			(G, V) = egbislib.distanceWeightedThresholdGraph(img, R=R)
-	#egbislib.showGraph(G)
+			if not weighted:
+				(G, V) = egbislib.distanceThresholdGraph(img, R=R)
+			else:
+				(G, V) = egbislib.distanceWeightedThresholdGraph(img, R=R)
+		#egbislib.showGraph(G)
 
-	seg = egbislib.segmentate(G, V, k=k)
-	segImage = seg.toImage(img.shape)
-	if not weighted:
-		egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
-							"_k"+str(k)+"_R"+str(R)+extension)
-	else:
-		egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
-							"_k"+str(k)+"_R"+str(R)+"w"+extension)	
-	egbislib.showStereo(img_raw, segImage)
-	return 0
+		seg = egbislib.segmentate(G, V, k=k)
+		segImage = seg.toImage(img.shape)
+		if not weighted:
+			egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
+								"_k"+str(k)+"_R"+str(R)+extension)
+		else:
+			egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
+								"_k"+str(k)+"_R"+str(R)+"w"+extension)	
+		egbislib.showStereo(img_raw, segImage)
+
+	if extension == ".csv":
+		print "running algorithm on csv with settings:"
+		print "\tfilename:", name+extension
+		print "\trows:     ", rows
+		print "\tk:       ", k
+		print "\tR:       ", R
+
+		table = egbislib.loadCSV(name+extension, rows=rows)
+		(G, V) = egbislib.csvToGraph(table, R=R)
+		#egbislib.showGraph(G)
+		seg = egbislib.segmentate(G, V, k=k)
+		label_list = seg.toLabelList()
+		#print label_list
+		egbislib.storeAllAttributeStatistics(name,
+										table, label_list)
 
 if __name__ == "__main__":
 	"""
@@ -67,22 +91,25 @@ if __name__ == "__main__":
 									\n\t\t\t[--sigma <sigma>]\t(default: 0.0)\
 									\n\t\t\t[--k <k>]\t\t(default: 1.0)\
 									\n\t\t\t[--R <R>]\t\t(default: 1.0)\
+									\n\t\t\t[--rows <rows>]\t\t(default: all)\
 									\n\t\t\t[--weighted]\t\t(default: not)\
-									\n\t\t\t <image-file>\n"
-		print "exp:\t\texponent for image scaling. Factor will be 2^exp\n"+\
-				"\t\tfor negative exp the image size will be reduced.\n\n"+\
-				"sigma:\t\tstandard deviation for gaussian image smoothing\n"+\
-				"\t\tto reduce artifacts\n\n"+\
+									\n\t\t\t <image/csv-file>\n"
+		print "exp:\t\t(for images) exponent for image scaling. Factor will\n"+\
+				"\t\tbe 2^exp. For exp<0 the image size will be reduced.\n\n"+\
+				"sigma:\t\t(for images)standard deviation for gaussian\n"+\
+				"\t\timage smoothing to reduce artifacts\n\n"+\
 				"k:\t\tfactor for component merging threshold function. The\n"+\
 				"\t\tlarger the value, the more likely is it for components\n"+\
 				"\t\tto be merged.\n\n"+\
 				"R:\t\trange of neighborhood relationships (in pixels)\n"+\
 				"\t\tR=0 will enable simple neightborhood edges method.\n\n"+\
-				"weighted:\twheter or not to use linear increase of weights\n"+\
-				"\t\twith increasing distance."
+				"rows:\t\t(for CSV) how many rows should be considered for\n"+\
+				"\t\tthe segmentation algorithm.\n\n"+\
+				"weighted:\t(for images)wheter or not to use linear\n"+\
+				"\t\tincrease of weights with increasing distance."
 		sys.exit(0)
 
-	sigma = 0; exp = 0; k = 1; R = 1; weighted = False
+	sigma = 0; exp = 0; k = 1; R = 1; weighted = False; rows = -1
 	
 	imagefile = sys.argv[-1].split(".")
 	if len(imagefile) > 2:
@@ -105,6 +132,9 @@ if __name__ == "__main__":
 		R = float(sys.argv[i+1])
 	if "--weighted" in sys.argv:
 		weighted = True
+	if "--rows" in sys.argv:
+		i = sys.argv.index("--rows")
+		rows = int(sys.argv[i+1])
 
 	runSegmentation(name, extension, exp=exp, sigma=sigma, k=k, R=R,
-												weighted=weighted)
+										weighted=weighted, rows=rows)
