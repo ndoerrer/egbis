@@ -81,6 +81,8 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
 		#print label_list
 		egbislib.storeAllAttributeStatistics(name,
 										table, label_list)
+		pca_data = egbislib.pcaTransform(table)
+		egbislib.colorScatterPlot(pca_data, label_list, name)
 
 if __name__ == "__main__":
 	"""
