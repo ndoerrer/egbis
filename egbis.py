@@ -3,10 +3,11 @@
 
 import egbislib
 import sys
+from skimage.segmentation import felzenszwalb
 
 # falcon: exp=-4, sigma=0.8, k=3.0, R=1 -> runs 25 seconds
 # falcon: exp=-4, sigma=1.3, k=2.5, R=3
-# falcon: exp=-2, sigma=1.3, k=2.5, R=3 weighted -> runs 9 hours :/
+# falcon: exp=-2, sigma=1.3, k=2.5, R=3 weighted -> runs 8 hours :/
 # shapes: exp=-2, sigma=0.8, k=3.0, R=1 -> runs 3 minutes (10GB RAM!!)
 # shapes: exp=-3, sigma=0.8, k=2.5, R=3
 
@@ -17,7 +18,7 @@ import sys
 # of space and a veeeeery long time to compute
 
 def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
-										weighted=False, rows=-1):
+								weighted=False, useskimage=False, rows=-1):
 	"""
 	Method running the whole algorithm. Image is loaded, converted to grayscale
 	and converted to a graph which is then used for the segmentation algorithm.
@@ -31,6 +32,7 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
 		R:			neighborhood distance limit (in pixels)
 		weighted:	if a linear increase of weights with distance should be used
 		rows:		(for CSV) how many rows should be processed (from start)
+		useskimage:	whether to use the skimage implementation instead of this
 	Returns: exit status
 	"""
 	if extension == ".jpg" or extension == ".png" or extension == ".tif":
@@ -41,23 +43,28 @@ def runSegmentation(name, extension, exp=0, sigma=0, k=1.0, R=1,
 		print "\tk:       ", k
 		print "\tR:       ", R
 		print "\tweighted:", weighted
+		print "\tuseskimage:", useskimage
 
 		img_raw = egbislib.imageToGray(egbislib.loadImage(name+extension))
 		img_raw = egbislib.scaleImage(img_raw, exp)
-		img = egbislib.preprocess(img_raw, sigma=sigma)
-		#egbislib.showImage(img)
 
-		if R == 0:
-			(G, V) = egbislib.directNeighborGraph(img)
+		if useskimage:
+			segImage = felzenszwalb(img_raw, scale=k, sigma=sigma, min_size=1)
+
 		else:
-			if not weighted:
-				(G, V) = egbislib.distanceThresholdGraph(img, R=R)
-			else:
-				(G, V) = egbislib.distanceWeightedThresholdGraph(img, R=R)
-		#egbislib.showGraph(G)
+			img = egbislib.preprocess(img_raw, sigma=sigma)
 
-		seg = egbislib.segmentate(G, V, k=k)
-		segImage = seg.toImage(img.shape)
+			if R == 0:
+				(G, V) = egbislib.directNeighborGraph(img)
+			else:
+				if not weighted:
+					(G, V) = egbislib.distanceThresholdGraph(img, R=R)
+				else:
+					(G, V) = egbislib.distanceWeightedThresholdGraph(img, R=R)
+
+			seg = egbislib.segmentate(G, V, k=k)
+			segImage = seg.toImage(img.shape)
+
 		if not weighted:
 			egbislib.saveImage(segImage, name+"_e"+str(exp)+"_sigma"+str(sigma)+
 								"_k"+str(k)+"_R"+str(R)+extension)
@@ -108,10 +115,13 @@ if __name__ == "__main__":
 				"rows:\t\t(for CSV) how many rows should be considered for\n"+\
 				"\t\tthe segmentation algorithm.\n\n"+\
 				"weighted:\t(for images)wheter or not to use linear\n"+\
-				"\t\tincrease of weights with increasing distance."
+				"\t\tincrease of weights with increasing distance.\n\n"+\
+				"useskimage:\t(for images)wheter or not to use the skimage\n"+\
+				"\t\felsenzwalb implementation instead of the manual one."
 		sys.exit(0)
 
-	sigma = 0; exp = 0; k = 1; R = 1; weighted = False; rows = -1
+	sigma = 0; exp = 0; k = 1; R = 1
+	weighted = False; useskimage = False; rows = -1
 	
 	imagefile = sys.argv[-1].split(".")
 	if len(imagefile) > 2:
@@ -134,9 +144,11 @@ if __name__ == "__main__":
 		R = float(sys.argv[i+1])
 	if "--weighted" in sys.argv:
 		weighted = True
+	if "--useskimage" in sys.argv:
+		useskimage = True
 	if "--rows" in sys.argv:
 		i = sys.argv.index("--rows")
 		rows = int(sys.argv[i+1])
 
 	runSegmentation(name, extension, exp=exp, sigma=sigma, k=k, R=R,
-										weighted=weighted, rows=rows)
+						weighted=weighted, useskimage=useskimage, rows=rows)
