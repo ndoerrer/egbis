@@ -11,7 +11,7 @@ from skimage.segmentation import felzenszwalb
 # shapes: exp=-2, sigma=0.8, k=3.0, R=1 -> runs 3 minutes (10GB RAM!!)
 # shapes: exp=-3, sigma=0.8, k=2.5, R=3
 
-# fifastats.csv: R=200, k=4000, rows=2000 -> runs 45 minutes
+# fifastats.csv: R=150, k=4000, rows=4000 -> runs 60 minutes
 # fifastats.csv: R=250, k=4000, rows=400 -> runs 15 seconds
 
 #Remark: storing all pairwise differences would need 2474983368 Bytes ~ 2.5 GB
