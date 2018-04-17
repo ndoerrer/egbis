@@ -33,7 +33,7 @@ def colorScatterPlot(data, color_labels, name):
 	fig, ax = plt.subplots()
 	for i in range(len(color_labels)):
 		ax.scatter(data[color_labels[i],0], data[color_labels[i],1], label=i)
-	plt.legend(loc="upper left", prop={'size': 8})
+#	plt.legend(loc="upper left", prop={'size': 8})	#removed for many classes
 	plt.title("scatterplot of pca of attribute values of different classes")
 	ax.set_xlabel("pc1-values")
 	ax.set_ylabel("pc2-values")

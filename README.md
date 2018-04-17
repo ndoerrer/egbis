@@ -25,9 +25,10 @@ matplotlib 2.2.0
 networkx 2.1
 numpy 1.14.2
 scikit-image 0.13.1
+scikit-learn 0.19.1
 
 As for hardware, a lot of RAM may be needed if working with large images. e.g.
-for uncompressed 480 x 270 Pixel image the programm needs approximately 16GB.
+for uncompressed 480 x 270 Pixel image the programm needs approximately 9GB.
 
 
 C	Execution

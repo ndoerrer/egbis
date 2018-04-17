@@ -102,6 +102,7 @@ if __name__ == "__main__":
 									\n\t\t\t[--R <R>]\t\t(default: 1.0)\
 									\n\t\t\t[--rows <rows>]\t\t(default: all)\
 									\n\t\t\t[--weighted]\t\t(default: not)\
+									\n\t\t\t[--useskimage]\t\t(default: not)\
 									\n\t\t\t <image/csv-file>\n"
 		print "exp:\t\t(for images) exponent for image scaling. Factor will\n"+\
 				"\t\tbe 2^exp. For exp<0 the image size will be reduced.\n\n"+\

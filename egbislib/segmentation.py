@@ -57,7 +57,7 @@ class Segmentation:
 		if i != j:
 			self.parent[i] = j
 			self.cardinality[j] += self.cardinality[i]
-			self.Int[j] = max(self.Int[j], weight)
+			self.Int[j] = max(self.Int[i], max(self.Int[j], weight))
 
 	def issame(self, i, j):
 		"""
