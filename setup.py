@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -20,7 +20,14 @@ setup(
     license = "BSD",		#??
     keywords = "segmentation, graph-based, ",
     url = "http://packages.python.org/an_example_pypi_project",
-    packages=['egbislib'],
+    packages=find_packages(),#['egbislib'],
+	install_requires=[
+		"matplotlib >= 2.2.0",
+		"networkx >= 2.1",
+		"numpy >= 1.14.2",
+		"scikit-image >= 0.13.1",
+		"scikit-learn >= 0.19.1"
+	],
     long_description=read('README.md'),
     classifiers=[
         "Development Status :: 4 - Beta",
